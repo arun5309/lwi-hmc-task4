@@ -5,6 +5,7 @@ provider "aws" {
 
 
 # Main vpc
+
 resource "aws_vpc" "main_vpc" {
 	cidr_block="192.168.0.0/16"
 	instance_tenancy="default"
@@ -16,9 +17,6 @@ resource "aws_vpc" "main_vpc" {
 
 # Private subnet
 resource "aws_subnet" "private_subnet" {
-	#depends_on = [
-	#	aws_subnet.public_subnet,
-	#]
 	vpc_id=aws_vpc.main_vpc.id
 	cidr_block="192.168.1.0/24"
 	availability_zone="ap-south-1b"
@@ -29,9 +27,6 @@ resource "aws_subnet" "private_subnet" {
 
 # Public subnet
 resource "aws_subnet" "public_subnet" {
-	#depends_on = [
-	#	aws_vpc.main_vpc,
-	#]
 	vpc_id=aws_vpc.main_vpc.id
 	cidr_block="192.168.0.0/24"
 	map_public_ip_on_launch="true"
@@ -42,10 +37,8 @@ resource "aws_subnet" "public_subnet" {
 }
 
 # Internet gateway
+
 resource "aws_internet_gateway" "main_ig" {
-	#depends_on = [
-	#	aws_subnet.private_subnet
-	#]
 	vpc_id=aws_vpc.main_vpc.id
 	tags = {
 		Name="main_ig"
@@ -53,10 +46,8 @@ resource "aws_internet_gateway" "main_ig" {
 }
 
 # Routing table
+
 resource "aws_route_table" "main_rt" {
-	#depends_on = [
-	# aws_internet_gateway.main_ig,
-	#]
 	vpc_id=aws_vpc.main_vpc.id
 
 	route {
@@ -72,9 +63,6 @@ resource "aws_route_table" "main_rt" {
 # Route table association
 
 resource "aws_route_table_association" "pub_rt_assoc" {
-	#depends_on=[
-	#aws_route_table.main_rt,
-	#]
 	subnet_id=aws_subnet.public_subnet.id
 	route_table_id=aws_route_table.main_rt.id
 }
@@ -92,7 +80,7 @@ module "key_pair" {
 	public_key=tls_private_key.main_key.public_key_openssh
 }
 
-# Security group
+# Security groups
 
 # Security group for public subnet
 
@@ -236,7 +224,7 @@ resource "aws_instance" "mysql_instance" {
 	}
 }
 
-# NAT
+# EIP
 
 resource "aws_eip" "nat" {
 	vpc=true
@@ -286,7 +274,7 @@ resource "aws_route_table_association" "priv_rt_assoc" {
 	route_table_id=aws_route_table.private_rt.id
 }
 
-# Write main_key to pem file locally
+# Local-exec for write main_key to pem file locally
 
 resource "null_resource" "write_key" {
 	depends_on = [
